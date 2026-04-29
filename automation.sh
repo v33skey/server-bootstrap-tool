@@ -18,26 +18,26 @@ is_valid_ip() {
     return 0
 }
 
-#UNCOMMENT THIS
-# while true; do
-#     read -rp "Enter server IP: " SERVER_IP
+#COMMENT THIS FOR TESTS
+while true; do
+    read -rp "Enter server IP: " SERVER_IP
 
-#     if is_valid_ip "$SERVER_IP"; then
-#         break
-#     fi
+    if is_valid_ip "$SERVER_IP"; then
+        break
+    fi
 
-#     printf "Invalid IP, try again. \n"
+    printf "Invalid IP, try again. \n"
 
-# done
+done
 
-# read -rp "Enter username: " USERNAME
+read -rp "Enter username: " USERNAME
 
-# read -rsp "Enter user password: " PASSWD
+read -rsp "Enter user password: " PASSWD
 
-#DELETE THIS
-SERVER_IP="192.168.0.1"
-USERNAME="USER"
-PASSWD="123123"
+#FOR TESTS
+# SERVER_IP="192.168.0.1"
+# USERNAME="USER"
+# PASSWD="123123"
 
 printf "\n"
 printf "Connection parameters:\n"
@@ -60,7 +60,7 @@ while true; do
         printf "Now you need to login by your password every time\n"
         break
     else
-        printf "Invalid option. Try again.\n"s
+        printf "Invalid option. Try again.\n"
     fi
 done
 #script exiting
