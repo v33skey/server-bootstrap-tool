@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-
+#Валидация введенного IP адреса сервера
 is_valid_ip() {
     local ip="$1"
     local IFS="."
@@ -18,7 +18,7 @@ is_valid_ip() {
     return 0
 }
 
-#COMMENT THIS FOR TESTS
+#Сбор данных для работы скрипта
 ask_connection_data() {
     while true; do
         read -rp "Enter server IP: " SERVER_IP
@@ -40,9 +40,11 @@ ask_connection_data() {
     done
     return 0
 }
+#Вывод введенных данных для проверки
 connection_data() {
     printf "Your connection data:\n Server IP : $SERVER_IP \n Root username: \"$USERNAME_ROOT\"\n"
 }
+
 #Создание SSH-ключа для соединения с сервером без ввода пароля
 ssh_key_creation_tool(){
     printf "For better security, a non-root user should be created.\n" 
@@ -81,34 +83,3 @@ main() {
 }
 
 main
-#FOR TESTS
-# SERVER_IP="192.168.0.1"
-# USERNAME="USER"
-# PASSWD="123123"
-
-# printf "\n"
-# printf "Connection parameters:\n"
-# printf "Server IP: %s\n" "$SERVER_IP"
-# printf "Username: %s\n" "$USERNAME"
-
-# #Asks user need SSH-key
-# printf "Do you need to create SSH-key? (Print 1 or 2)\n"
-# printf "1. Yes\n"
-# printf "2. No\n"
-
-
-# while true; do
-#     read -rp "Choose an option (Default Yes): " SSH_OPTION
-
-#     if [ "$SSH_OPTION" = "1" ] || [ -z "$SSH_OPTION" ]; then
-#         ssh-keygen -t ed25519 -f ~/.ssh/keykey
-#         break
-#     elif [ "$SSH_OPTION" = "2" ]; then
-#         printf "Now you need to login by your password every time\n"
-#         break
-#     else
-#         printf "Invalid option. Try again.\n"
-#     fi
-# done
-# #script exiting
-# read -rsp "Press any key to close window..."    
