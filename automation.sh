@@ -226,7 +226,7 @@ menu(){
                 printf "New user '$DEF_USERNAME' created. "
                 read -rp "Press Enter to continue"
             else
-                printf "Creating new user fails, try again"
+                printf "Creating new user failed, try again"
                 read -rp "Press Enter to continue"
             fi
         ;;
