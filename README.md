@@ -1,4 +1,4 @@
-# Linux Automation Tool
+# Server bootstrap tool
 
 ## About
 
