@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-#Валидация введенного IP адреса сервера
+
 is_valid_ip() {
     local ip="$1"
     local IFS="."
@@ -18,7 +18,7 @@ is_valid_ip() {
     return 0
 }
 
-#Сбор данных для работы скрипта
+
 ask_connection_data() {
     while true; do
         read -rp "Enter server IP: " SERVER_IP
@@ -39,7 +39,7 @@ ask_connection_data() {
         fi
     done
     while true; do 
-        read -rp "Enter the username for server operations: " DEF_USERNAME
+        read -rp "Enter target username" DEF_USERNAME
         if [ -z "$DEF_USERNAME" ]; then
             printf "Non-root username is invalid. Try again\n"
         else
@@ -48,28 +48,17 @@ ask_connection_data() {
     done
     return 0
 }
-#Вывод введенных данных для проверки
+
 connection_data() {
     printf "Your connection data:\n Server IP : $SERVER_IP \n Root username: \"$USERNAME_ROOT\"\n Target username: \"$DEF_USERNAME\"\n"
 }
 
-#Создание SSH-ключа для соединения с сервером без ввода пароля
+
 ssh_key_creation_tool(){
-    # if [[ -z "$DEF_USERNAME" ]]; then
-    #     read -rp "Enter the new username: " DEF_USERNAME 
-    # else
-    #     while true; do
-    #         if [[ -z "$DEF_USERNAME" ]]; then
-    #             read -rp "Username cannot be empty. Try again.\n" DEF_USERNAME
-    #         else
-    #             break
-    #         fi
-    #     done
-    # read -rp "Name your SSH-key: " SSH_KEY_NAME
-    read -rp "Name your SSH-key: " SSH_KEY_NAME
+    read -rp "Name your SSH key: " SSH_KEY_NAME
     while true; do
         if [[ -z "$SSH_KEY_NAME" ]]; then
-            read -rp "SSH-key name cannot be empty. Try again. \n" SSH_KEY_NAME
+            read -rp "SSH key name cannot be empty. Try again. \n" SSH_KEY_NAME
         else
 
             if ssh "$USERNAME_ROOT"@"$SERVER_IP" "id $DEF_USERNAME"; then
@@ -80,7 +69,7 @@ ssh_key_creation_tool(){
                 chmod 700 \"/home/$DEF_USERNAME/.ssh\" &&
                 chmod 600 \"/home/$DEF_USERNAME/.ssh/authorized_keys\" &&
                 chown -R $DEF_USERNAME:$DEF_USERNAME \"/home/$DEF_USERNAME/.ssh\""
-                printf "SSH-key for \"$DEF_USERNAME\" is available to use."
+                printf "SSH key for \"$DEF_USERNAME\" is available to use."
                 read -rp "Press any key to exit..."
                 break
             else
@@ -95,14 +84,14 @@ ssh_key_creation_tool(){
 
 create_user(){
     ssh "$USERNAME_ROOT"@"$SERVER_IP" "
-    adduser $DEF_USERNAME && 
-    usermod -aG sudo $DEF_USERNAME &&
-    echo '$DEF_USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$DEF_USERNAME &&
-    chmod 440 /etc/sudoers.d/$DEF_USERNAME"
+    apt update &&
+    apt install -y sudo &&
+    adduser \"$DEF_USERNAME\" && 
+    usermod -aG sudo \"$DEF_USERNAME\""
 }
 
 change_user(){
-    read -rp "Print a new username: " DEF_USERNAME
+    read -rp "Enter a new username: " DEF_USERNAME
     while true; do
         if [[ -z "$DEF_USERNAME" ]]; then
             read -rp "Username cannot be empty. Enter username: " DEF_USERNAME
@@ -113,12 +102,41 @@ change_user(){
 
 }
 
-install_docker(){
+# grant_temp_sudo(){
+#     ssh "$USERNAME_ROOT"@"$SERVER_IP" "
+#     printf '%s\n' '$DEF_USERNAME ALL=(ALL) NOPASSWD:ALL' > '/etc/sudoers.d/${DEF_USERNAME}-bootstrap' &&
+#     chmod 440 '/etc/sudoers.d/${DEF_USERNAME}-bootstrap'
+#     "
+# }
+
+# revoke_temp_sudo(){
+#     ssh "$USERNAME_ROOT"@"$SERVER_IP" "
+#     rm -f '/etc/sudoers.d/${DEF_USERNAME}-bootstrap'
+#     "
+# }
+
+# run_with_temp_sudo() {
+#     local install_func="$1"
+
+#     grant_temp_sudo
+#     trap revoke_temp_sudo RETURN
+
+#     if "$install_func"; then
+#         printf "Installation succeeded\n"
+#     else
+#         printf "Installation failed. Try again\n"
+#     fi
+#     read -rp "Press Enter to continue"
+# }
+
+install_docker() {
     local SYSTEM
+
     while true; do
         printf "1. Debian\n"
         printf "2. Ubuntu\n"
         read -rp "Choose a system: " SYSTEM
+
         case "$SYSTEM" in
         1)
             if install_docker_debian; then
@@ -136,7 +154,6 @@ install_docker(){
                 printf "Installation succeeded\n"
                 read -rp "Press Enter to continue"
                 break
-                
             else
                 printf "Installation failed. Try again\n"
                 read -rp "Press Enter to continue"
@@ -145,41 +162,51 @@ install_docker(){
             ;;
         esac
     done
-
 }
 
+
 install_docker_ubuntu(){
-    ssh "$DEF_USERNAME"@"$SERVER_IP" '
-    sudo apt update &&
-    sudo apt install -y ca-certificates curl &&
-    sudo install -m 0755 -d /etc/apt/keyrings &&
-    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc &&
-    sudo chmod a+r /etc/apt/keyrings/docker.asc &&
+    ssh "$USERNAME_ROOT"@"$SERVER_IP" '
+    apt update &&
+    apt install -y ca-certificates curl &&
+    install -m 0755 -d /etc/apt/keyrings &&
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc &&
+    chmod a+r /etc/apt/keyrings/docker.asc &&
     CODENAME=$(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") &&
     ARCH=$(dpkg --print-architecture) &&
     echo "deb [arch=${ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${CODENAME} stable" |
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null &&
-    sudo apt update &&
-    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin &&
-    sudo systemctl enable --now --quiet docker
+    tee /etc/apt/sources.list.d/docker.list > /dev/null &&
+    apt update &&
+    apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin &&
+    systemctl enable --now --quiet docker &&
+    usermod -aG docker '"$DEF_USERNAME"'
     '
 }
 
 install_docker_debian(){
-    ssh "$DEF_USERNAME"@"$SERVER_IP" '
-    sudo apt update &&
-    sudo apt install -y ca-certificates curl &&
-    sudo install -m 0755 -d /etc/apt/keyrings &&
-    sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc &&
-    sudo chmod a+r /etc/apt/keyrings/docker.asc &&
+    ssh "$USERNAME_ROOT"@"$SERVER_IP" '
+    apt update &&
+    apt install -y ca-certificates curl &&
+    install -m 0755 -d /etc/apt/keyrings &&
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc &&
+    chmod a+r /etc/apt/keyrings/docker.asc &&
     CODENAME=$(. /etc/os-release && echo "$VERSION_CODENAME") &&
     ARCH=$(dpkg --print-architecture) &&
     echo "deb [arch=${ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian ${CODENAME} stable" |
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null &&
-    sudo apt update &&
-    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin &&
-    sudo systemctl enable --now --quiet docker
+    tee /etc/apt/sources.list.d/docker.list > /dev/null &&
+    apt update &&
+    apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin &&
+    systemctl enable --now --quiet docker &&
+    usermod -aG docker '"$DEF_USERNAME"'
     '
+}
+
+install_nginx(){
+    ssh "$USERNAME_ROOT"@"$SERVER_IP" "
+    apt update &&
+    apt install -y nginx &&
+    systemctl enable --now nginx
+    "
 }
 
 menu(){
@@ -187,13 +214,14 @@ menu(){
     while true; do
         clear
         printf "1. Install docker\n"
-        printf "2. Install SSH-key\n"
+        printf "2. Install SSH key\n"
         printf "3. Change connection data\n"
         printf "4. Print connection info\n"
         printf "5. Create new user\n"
         printf "6. Change target user\n"
+        printf "7. Install nginx\n"
         printf "0. Exit\n"
-        read -rp "Choose an action(nums): " CHOICE
+        read -rp "Choose an action(number): " CHOICE
         case "$CHOICE" in
         #Install docker
         1) 
@@ -201,7 +229,7 @@ menu(){
             ;;
         2)
             if ssh_key_creation_tool; then
-                printf "SSH key installed succesffully\n"
+                printf "SSH key installed successfully\n"
                 read -rp "Press Enter to continue"
             else
                 printf "Installation failed. Try again\n"
@@ -223,20 +251,29 @@ menu(){
             ;;
         5)
             if create_user; then
-                printf "New user '$DEF_USERNAME' created. "
+                printf "New user '$DEF_USERNAME' created. \n"
                 read -rp "Press Enter to continue"
             else
-                printf "Creating new user failed, try again"
+                printf "Failed to create user. Try again."
                 read -rp "Press Enter to continue"
             fi
         ;;
         6)
             if change_user; then
-                printf "Target user set to '$DEF_USERNAME'."
+                printf "Target user set to '$DEF_USERNAME'.\n"
                 read -rp "Press Enter to continue"
             else
-                printf "The user change failed, try again."
+                printf "Failed to change target user. Try again.\n"
                 read -rp "Press Enter to continue"
+            fi
+        ;;
+        7)  
+            if install_nginx; then
+                printf "Nginx installed successfully.\n"
+                read -rp "Press any key to continue"
+            else
+                printf "Installation failed. Try again.\n"
+                read -rp "Press any key to continue"
             fi
         ;;
         0)

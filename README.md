@@ -1,4 +1,4 @@
-# Linux Automation Tool
+# Server bootstrap tool
 
 ## About
 
@@ -51,8 +51,8 @@ This will be refactored in future versions to use temporary privilege escalation
 
 - [x] Docker installation
 - [x] SSH key deployment
-- [ ] Temporary sudo bootstrap refactor
-- [ ] Nginx installation
+- [x] Temporary sudo bootstrap refactor
+- [x] Nginx installation
 - [ ] Firewall setup
 
 ## Status
