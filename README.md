@@ -16,10 +16,11 @@ Bash automation script for initial Linux server bootstrap.
 - Non-root user creation
 - Docker installation (Ubuntu/Debian supported)
 - Interactive system menu
+- nginx installation
 
 ## Planned Features
 
-- Nginx installation
+- fail2ban installation
 
 ## Requirements
 
@@ -42,10 +43,6 @@ chmod +x automation.sh
 ./automation.sh
 ```
 
-## Security Notes
-
-Current implementation uses passwordless sudo for bootstrap automation.
-This will be refactored in future versions to use temporary privilege escalation.
 
 ## Roadmap
 
